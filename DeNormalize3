@@ -1,0 +1,198 @@
+from openpyxl import load_workbook
+from openpyxl import Workbook
+import time
+
+workbook_input = "iCureCeliac De-identified Data 12-6-2016.xlsx"
+worksheet_input = "Survey Responses"
+# ---need rules/limits or checks for valid sheet and header names?
+#---need dates
+#---need to sort better - should run through all values to build the lists
+#---then separately create sheets, populate headers and row values and then populate column values
+sheet_list_column = [19,4]
+column_list_column = [10,8,9]
+row_list_column =  [1,5]
+row_adjustment = 2 #adjust for 1 header row and 1 for 0 array base to 1 excel base
+column_adjustment = len(row_list_column) + 1 #adjust 1 for 0 array base and x for number of columns identifying a row
+value_column = 11 #could make array and store with delimiters?
+workbook_output = "iCureCeliac De-identified Data 12-6-2016-out.xlsx"
+#this will separate multi-field sheet, row, column names, so those values shouldn't already contain value
+#no escape is built in
+strSeparator = "|"
+#date not working for compare, so setting min and max to last date encountered for a row
+date_column = 7
+Min_Date_Name = "Min of Date Answered"
+Max_Date_Name = "Max of Date Answered"
+bRecord_Date = True
+
+print("Loading wb_in:", time.asctime(time.localtime(time.time())))
+
+wb_in = load_workbook(workbook_input)
+print("Loaded wb_in:", time.asctime(time.localtime(time.time())))
+
+wb_out = Workbook(workbook_output)
+wb_out.save(workbook_output)
+wb_out = load_workbook(workbook_output)
+
+# print(wb.get_sheet_names())
+
+ws_in = wb_in.get_sheet_by_name(worksheet_input)
+
+sheet_list = []
+column_list = []
+row_list = []
+
+Counter = 0
+Stop_Counter = 10000
+# first iteration Build Lists to capture list of sheets, rows, columns
+for row in ws_in.iter_rows(min_row=2):
+
+    # progress monitoring routine
+    Counter += 1
+    if Counter % Stop_Counter == 1:
+        print(Counter, " Build Lists : ", time.asctime(time.localtime(time.time())))
+
+    # set current sheet, row, column indexes and value variables
+    iCurrent_New_Sheet = ""
+    iCurrent_New_Row = ""
+    iCurrent_New_Column = ""
+    Current_New_Value = ""
+    Current_Sheet_Name = ""
+    Current_Column_Name = ""
+    Current_Row_Name = ""
+
+    # use -1 to adjust for zero array in iter_rows
+    # concat column(s) into sheet names
+    for i in range(0, len(sheet_list_column)):
+        if i > 0:
+            Current_Sheet_Name += strSeparator
+        Current_Sheet_Name += str(row[sheet_list_column[i] - 1].value)
+    # add sheet to sheet_list if needed and create colum and row place holder and create sheet
+    if Current_Sheet_Name not in sheet_list:
+        sheet_list.append(Current_Sheet_Name)
+        column_list.append([])
+        row_list.append([])
+
+    # set current sheet value
+    iCurrent_New_Sheet = sheet_list.index(Current_Sheet_Name)
+
+    # concat column_list to unique value
+    for i in range(0, len(column_list_column)):
+        if i > 0:
+            Current_Column_Name += strSeparator
+        Current_Column_Name += str(row[column_list_column[i] - 1].value)
+
+    if Current_Column_Name not in column_list[iCurrent_New_Sheet]:
+        column_list[iCurrent_New_Sheet].append(Current_Column_Name)
+
+    # convert row column values into row name
+    for i in range(0, len(row_list_column)):
+        if i > 0:
+            Current_Row_Name += strSeparator
+        Current_Row_Name += str(row[row_list_column[i] - 1].value)
+
+    if Current_Row_Name not in row_list[iCurrent_New_Sheet]:
+        row_list[iCurrent_New_Sheet].append(Current_Row_Name)
+
+# create all the sheets and headers (sort lists first if needed)
+for s in range(0, len(sheet_list)):
+    ws_out = wb_out.create_sheet(sheet_list[s])
+
+    # write header values for columns
+    for c in range(0, len(column_list[s])):
+        ws_out.cell(row=1, column=c + column_adjustment).value = column_list[s][c]
+
+    # write header to columns 1 though len(row_list_column) (always start column 1)
+    #in the loop so headers are written for each sheet
+    for r in range(0, len(row_list_column)):
+        ws_out.cell(row=1, column=r + 1).value = ws_in.cell(row=1, column=row_list_column[r]).value
+
+    #add date headers
+    if bRecord_Date:
+        # number of columns + row identifies + 1 for zero base arrays +1 and +2 for additional columns
+        ws_out.cell(row=1, column= len(row_list_column) + len(column_list[s]) + 1).value = Min_Date_Name
+        ws_out.cell(row=1, column= len(row_list_column) + len(column_list[s]) + 2).value = Max_Date_Name
+
+# second iteration Store Values for record values (allows sorting lists and knowing max to add dates
+# assume all values are in lists as needed
+Counter = 0  # reset counter
+for row in ws_in.iter_rows(min_row=2):
+
+    # progress monitoring routine
+    Counter += 1
+    if Counter % Stop_Counter == 1:
+        print(Counter, " Store Values : ", time.asctime(time.localtime(time.time())))
+
+    # set current sheet, row, column indexes and value variables
+    iCurrent_New_Sheet = ""
+    iCurrent_New_Row = ""
+    iCurrent_New_Column = ""
+    Current_New_Value = ""
+    Current_Sheet_Name = ""
+    Current_Column_Name = ""
+    Current_Row_Name = ""
+    Current_Date_Value = ""
+    Current_Min_Date = ""
+    Current_Max_Date = ""
+
+    # use -1 to adjust for zero array in iter_rows
+    # concat column(s) into sheet names
+    for i in range(0, len(sheet_list_column)):
+        if i > 0:
+            Current_Sheet_Name += strSeparator
+        Current_Sheet_Name += str(row[sheet_list_column[i] - 1].value)
+
+    # set current sheet value
+    iCurrent_New_Sheet = sheet_list.index(Current_Sheet_Name)
+    ws_out = wb_out.get_sheet_by_name(Current_Sheet_Name)
+
+    # concat column_list to unique value
+    for i in range(0, len(column_list_column)):
+        if i > 0:
+            Current_Column_Name += strSeparator
+        Current_Column_Name += str(row[column_list_column[i] - 1].value)
+
+    iCurrent_New_Column = column_list[iCurrent_New_Sheet].index(Current_Column_Name)
+
+    # convert row column values into row name
+    for i in range(0, len(row_list_column)):
+        if i > 0:
+            Current_Row_Name += strSeparator
+        Current_Row_Name += str(row[row_list_column[i] - 1].value)
+
+    iCurrent_New_Row = row_list[iCurrent_New_Sheet].index(Current_Row_Name)
+    for i in range(0, len(row_list_column)):
+        # write values defining row
+        ws_out.cell(row=iCurrent_New_Row + row_adjustment, column=i + 1).value = row[row_list_column[i] - 1].value
+
+    #get the actual value
+    Current_New_Value = row[value_column - 1].value
+
+    # set value in new sheet in correct column
+    ws_out.cell(row=iCurrent_New_Row + row_adjustment,
+                column=iCurrent_New_Column + column_adjustment).value = Current_New_Value
+
+    if bRecord_Date:
+        Current_Date_Value = row[date_column - 1].value
+        Current_Min_Date = ws_out.cell(row=iCurrent_New_Row + row_adjustment,
+                                            column=len(row_list_column) + len(column_list[iCurrent_New_Sheet]) + 1).value
+        Current_Max_Date = ws_out.cell(row=iCurrent_New_Row + row_adjustment,
+                                            column=len(row_list_column) + len(column_list[iCurrent_New_Sheet]) + 2).value
+        #handle when they are still blank (just comment out til making work
+#        if Current_Min_Date == "":
+#            Current_Min_Date = Current_Date_Value
+#        if Current_Max_Date == "":
+#            Current_Max_Date = Current_Date_Value
+        #check and record min
+#        if Current_Date_Value <= Current_Min_Date:
+        ws_out.cell(row=iCurrent_New_Row + row_adjustment,
+                    column=len(row_list_column) + len(column_list[iCurrent_New_Sheet]) + 1).value = Current_Date_Value
+        #check and append max
+#        if Current_Date_Value >= Current_Max_Date:
+        ws_out.cell(row=iCurrent_New_Row + row_adjustment,
+                    column=len(row_list_column) + len(column_list[iCurrent_New_Sheet]) + 2).value = Current_Date_Value
+
+save_work = "yes"  # input("Save Workbook? ")
+if save_work == "yes":
+    print("Starting Save:", time.asctime(time.localtime(time.time())))
+    wb_out.save(workbook_output)
+    print("Completed Save:", time.asctime(time.localtime(time.time())))
