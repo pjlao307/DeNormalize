@@ -26,7 +26,7 @@ bRecord_Date = True
 
 print("Loading wb_in:", time.asctime(time.localtime(time.time())))
 
-wb_in = load_workbook(workbook_input)
+wb_in = load_workbook(filename=workbook_input, read_only=True)
 print("Loaded wb_in:", time.asctime(time.localtime(time.time())))
 
 wb_out = Workbook(workbook_output)
