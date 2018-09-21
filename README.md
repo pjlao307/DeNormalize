@@ -14,12 +14,12 @@ add columns S and T in Survey Responses with short survey name and survey sort c
 
 4. Sort Survey Responses by order desired
 
-a. survey sort code
+    a. survey sort code
    
-b. survey name (to sort alpha when survey code is same)
+    b. survey name (to sort alpha when survey code is same)
    
-c. foreign key (to group surveys and instances together)
+    c. foreign key (to group surveys and instances together)
  
-d. instance
+    d. instance
 
-e. date answered (to approximate question order so question columns are same)
+    e. date answered (to approximate question order so question columns are same)
